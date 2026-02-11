@@ -17,14 +17,18 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: "3.10"
+
+    - name: Clean Environment
+      run: |
+        # This removes any venv or cache folders that might have snuck in
+        rm -rf venv .venv __pycache__
         
-    - name: Install dependencies
+    - name: Install Linting Tools
       run: |
         python -m pip install --upgrade pip
         pip install flake8
-        # We only install the bare minimum to check for syntax errors
         
-    - name: Lint specifically main.py and app.py
+    - name: Run Targeted Lint
       run: |
-        # This tells the robot: DO NOT look at folders. ONLY look at these two files.
+        # Explicitly check only your logic files
         flake8 main.py app.py --count --select=E9,F63,F7,F82 --show-source --statistics

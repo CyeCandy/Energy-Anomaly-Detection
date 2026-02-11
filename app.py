@@ -1,63 +1,64 @@
+import warnings
+warnings.filterwarnings("ignore")
 import streamlit as st
 import requests
 import pandas as pd
 import plotly.express as px
 import numpy as np
 
-# 1. Page Configuration
+# Page Configuration
 st.set_page_config(page_title="Energy Grid Dashboard", layout="wide")
 st.title("⚡ Energy Grid Anomaly & Demand Dashboard")
-st.subheader("Real-time Forecasting & Cost Optimization")
+st.markdown("---")
 
-# 2. Sidebar - Simulation Settings
+# Sidebar for User Input
 st.sidebar.header("Simulation Settings")
-data_points = st.sidebar.slider("Number of Data Points", 20, 100, 50)
+data_points = st.sidebar.slider("Historical Data Points", 30, 150, 60)
 
-# 3. Generate Mock Data
-# In a real PM scenario, this would come from a SQL database or IoT sensors
-np.random.seed(42)
-mock_data = {
-    "load": np.random.normal(500, 50, data_points).tolist(),
-    "timestamp": pd.date_range(start="2024-01-01", periods=data_points, freq="H").strftime('%Y-%m-%d %H:%M:%S').tolist()
-}
+# Generate High-Volatility Mock Data
+# No seed = New random data every time the button is clicked
+load_data = np.random.normal(500, 150, data_points).tolist()
+timestamps = pd.date_range(start="2024-01-01", periods=data_points, freq="H").strftime('%Y-%m-%d %H:%M:%S').tolist()
+mock_data = {"load": load_data, "timestamp": timestamps}
 
-# 4. Action Button
+# Main Execution Button
 if st.button("Run Grid Analysis"):
     try:
-        # Send data to the FastAPI "Engine" (Window 1)
+        # Request data from our FastAPI microservice
         response = requests.post("http://127.0.0.1:8000/analyze", json=mock_data)
         results = response.json()
 
-        # 5. Display Key Metrics
+        # Row 1: Key Performance Indicators (KPIs)
         col1, col2, col3 = st.columns(3)
-        
         with col1:
             st.metric("Recommended Action", results["recommendation"])
-        
         with col2:
-            st.metric("Projected Savings", f"${results['potential_savings_usd']}")
-            
+            st.metric("Projected Savings", f"${results['potential_savings_usd']}", delta="Arbitrage Margin")
         with col3:
-            # Check for anomalies (Isolation Forest results)
-            status = "⚠️ Issue Detected" if -1 in results["anomalies"] else "✅ Healthy"
-            st.metric("Asset Health", status)
+            # Check if -1 (anomaly) exists in the results
+            has_anomaly = -1 in results["anomalies"]
+            status = "⚠️ Anomaly Detected" if has_anomaly else "✅ Healthy"
+            st.metric("Grid Asset Health", status)
 
-        # 6. Visualize the Data
+        # Row 2: Interactive Visualization
         chart_data = pd.DataFrame({
-            "Historical Load": mock_data["load"],
-            "Anomaly Score": results["anomalies"]
+            "Timestamp": pd.to_datetime(mock_data["timestamp"]),
+            "Load (MWh)": mock_data["load"],
+            "Anomaly": results["anomalies"]
         })
         
-        fig = px.line(chart_data, y="Historical Load", title="Grid Load Over Time")
-        # Highlight anomalies in red
-        fig.add_scatter(x=chart_data[chart_data['Anomaly Score'] == -1].index, 
-                        y=chart_data[chart_data['Anomaly Score'] == -1]['Historical Load'],
+        fig = px.line(chart_data, x="Timestamp", y="Load (MWh)", title="Live Grid Load & Anomaly Detection")
+        
+        # Overlay red markers on anomaly points
+        anomalies = chart_data[chart_data['Anomaly'] == -1]
+        fig.add_scatter(x=anomalies["Timestamp"], y=anomalies["Load (MWh)"], 
                         mode='markers', name='Anomalies', marker=dict(color='red', size=10))
         
         st.plotly_chart(fig, use_container_width=True)
+        
+        st.success("Strategy updated based on real-time market volatility.")
 
     except Exception as e:
-        st.error(f"Connection Error: Is the FastAPI server running in Window 1? (Error: {e})")
-
+        st.error(f"Connection Error: Is the FastAPI server running? (Error: {e})")
 else:
-    st.info("Click the button above to fetch data from the FastAPI engine.")
+    st.info("System Ready. Click the button to start the analysis.")

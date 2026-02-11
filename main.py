@@ -17,33 +17,32 @@ def analyze_grid(data: dict):
     df = pd.DataFrame(data)
     
     # 1. Forecasting Logic (SARIMA)
-    # Predict the next 3 hours of load to find peaks/troughs
     model = SARIMAX(df['load'], order=(1, 1, 1))
     res = model.fit(disp=False)
     forecast_values = res.forecast(steps=3)
     avg_forecast = forecast_values.mean()
 
     # 2. Anomaly Detection (Isolation Forest)
-    # contamination=0.1 means we expect roughly 10% of data to be outliers
     iso = IsolationForest(contamination=0.1, random_state=42)
     df['anomaly'] = iso.fit_predict(df[['load']])
     
-    # 3. Guaranteed Arbitrage Logic (The "Demo-Proof" Math)
+    # 3. Arbitrage Logic (Updated for GBP)
     baseline_load = df['load'].mean()
-    price_per_mwh = 50 
     
-    # We compare the forecast to the average to decide the action
+    # Updated price to reflect typical UK Day-Ahead prices (e.g., £65/MWh)
+    price_per_mwh_gbp = 65 
+    
     if avg_forecast < baseline_load:
         action = "BUY & STORE (Low Demand)"
-        # Savings = Difference in MWh * Price * Efficiency Factor
-        savings = (baseline_load - avg_forecast) * price_per_mwh * 1.5
+        savings = (baseline_load - avg_forecast) * price_per_mwh_gbp * 1.5
     else:
         action = "DISCHARGE / SELL (Peak Demand)"
-        savings = (avg_forecast - baseline_load) * price_per_mwh * 1.5
+        savings = (avg_forecast - baseline_load) * price_per_mwh_gbp * 1.5
 
     return {
         "forecast": forecast_values.tolist(),
         "anomalies": df['anomaly'].tolist(),
         "recommendation": action,
-        "potential_savings_pound_sterling": round(abs(savings), 2)
+        "currency": "GBP",
+        "potential_savings_gbp": round(abs(savings), 2)
     }

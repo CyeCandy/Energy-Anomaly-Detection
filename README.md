@@ -1,3 +1,4 @@
+[![Python application check](https://github.com/CyeCandy/energy-anomaly-detection/actions/workflows/python-app.yml/badge.svg)](https://github.com/CyeCandy/energy-anomaly-detection/actions)
 # ⚡ Energy Grid Anomaly & Demand Dashboard
 **An AI-driven Microservices Prototype for Smart Grid Optimization**
 

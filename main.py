@@ -45,5 +45,5 @@ def analyze_grid(data: dict):
         "forecast": forecast_values.tolist(),
         "anomalies": df['anomaly'].tolist(),
         "recommendation": action,
-        "potential_savings_usd": round(abs(savings), 2)
+        "potential_savings_pound_sterling": round(abs(savings), 2)
     }

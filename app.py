@@ -16,7 +16,6 @@ st.sidebar.header("Simulation Settings")
 data_points = st.sidebar.slider("Historical Data Points", 30, 150, 60)
 
 # Generate High-Volatility Mock Data
-# No seed = New random data every time the button is clicked
 load_data = np.random.normal(500, 150, data_points).tolist()
 timestamps = pd.date_range(start="2024-01-01", periods=data_points, freq="H").strftime('%Y-%m-%d %H:%M:%S').tolist()
 mock_data = {"load": load_data, "timestamp": timestamps}
@@ -33,9 +32,9 @@ if st.button("Run Grid Analysis"):
         with col1:
             st.metric("Recommended Action", results["recommendation"])
         with col2:
-            st.metric("Projected Savings", f"${results['potential_savings_usd']}", delta="Arbitrage Margin")
+            # --- UPDATED FOR GBP ---
+            st.metric("Projected Savings", f"£{results['potential_savings_gbp']}", delta="Arbitrage Margin")
         with col3:
-            # Check if -1 (anomaly) exists in the results
             has_anomaly = -1 in results["anomalies"]
             status = "⚠️ Anomaly Detected" if has_anomaly else "✅ Healthy"
             st.metric("Grid Asset Health", status)
@@ -49,7 +48,6 @@ if st.button("Run Grid Analysis"):
         
         fig = px.line(chart_data, x="Timestamp", y="Load (MWh)", title="Live Grid Load & Anomaly Detection")
         
-        # Overlay red markers on anomaly points
         anomalies = chart_data[chart_data['Anomaly'] == -1]
         fig.add_scatter(x=anomalies["Timestamp"], y=anomalies["Load (MWh)"], 
                         mode='markers', name='Anomalies', marker=dict(color='red', size=10))
